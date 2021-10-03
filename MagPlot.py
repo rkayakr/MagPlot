@@ -2,10 +2,11 @@
 # -*- coding: utf-8 -*-
 """
 plots PSWS magnetometer data from runmag.log
+plots either plain text or json format files
 
 windows version hardcoded homepath directory location
-expects filename to process in files.txt in PSWS/magnetometer
-expects magnetometer data files in PSWS/magnetometer/Mdata
+expects filename with callsign to process in files.txt in homepath
+expects magnetometer data files in homepath/logs
 leaves plots in homepath/Mplot
 
 for Pi comment out windows homepath and uncomment Pi  lines
@@ -15,13 +16,14 @@ uses modified WWV_utility2.py now called Mag_utility
 Bob Benedict, KD8CGH, 10/02/2021
 
 create text file "files.txt" in homepath directory
+  filetype (json or plain)
   filename 
   ...
 
 loads file name
 plots absolute, relative, total (if available) and temperature plots
 magnetometer results are filtered before plotting
-plot appearnce parameters at line 47
+plot appearnce parameters at line 51
 
 uses modified WWV_utility2.py 
 20 February 2020
@@ -43,6 +45,7 @@ from matplotlib import ticker
 from scipy.signal import filtfilt, butter
 import datetime  
 from Mag_utility import time_string_to_decimals
+import json
 
 # plot appearance parameters
 M = 8  # number of plot y ticks
@@ -58,10 +61,17 @@ DATADIR = homepath + 'logs/'   # Pi
 '''
 #comment out windows homepath and data dir for Pi
 homepath = "E:\\Documents\\PSWS\\magnetometer\\"  # set your windows path, comment out for Pi
-DATADIR = homepath + 'magdata/'
+DATADIR = homepath + 'logs/'
 #
 
 names = open(homepath+"files.txt","r")
+
+FileType = names.readline()
+FileType = FileType.strip('\n')
+if FileType[0:4] == 'json':
+    isjson=True
+else:
+    isjson=False
 
 Filenames=['a' for a in range (10)]
 Filedates=['a' for a in range (10)]
@@ -96,8 +106,6 @@ if nfiles > 1 :
     sys.exit(0)
 
 
-
-
 #saved plot directrory
 PlotDir = homepath + 'Mplot/'
 
@@ -111,14 +119,7 @@ if (path.exists(PrFilenames)):
 else:
     print('File ' + PrFilenames + ' not available.\nExiting disappointed...')
     sys.exit(0)
-
-with open(PrFilenames, 'r') as dataFile:
-    dataReader=csv.reader(dataFile)
-    data = list(dataReader)
-    Header = data.pop(0)
-
-print('Ready to start processing records')
-
+    
 # Prepare data arrays for multifile plotting
 hours=[[],[],[],[],[],[],[],[],[],[]]
 rtemp=[[],[],[],[],[],[],[],[],[],[]]
@@ -139,38 +140,70 @@ filtry=[[],[],[],[],[],[],[],[],[],[]]
 filtrz=[[],[],[],[],[],[],[],[],[],[]]
 filttot=[[],[],[],[],[],[],[],[],[],[]]
 
-LateHour=False # flag for loop going past 23:00 hours
-
-# eliminate all metadata saved at start of file - Look for UTC (CSV headers)
-#find first row of data0
-FindUTC = 0
-recordcnt  = 0
-freqcalc = 0
-calccnt = 0
-plot=0
+jList=[]
 istotal = True
+LateHour=False 
+    
+if (isjson==True):
+    with open(PrFilenames, 'r') as dataFile:
+        print('Ready to start processing json records')
+        for jsonObj in dataFile:
+            jDict = json.loads(jsonObj)
+            jList.append(jDict)
+    print("Printing each JSON Decoded Object")
+    for item in jList:
+        decHours=time_string_to_decimals(item["ts"])
+        if decHours > 23:
+           LateHour=True # went past 23:00 hours    
+        if (not LateHour) or (LateHour and (decHours>23)):
+            hours[0].append(decHours) 
+    #        print(item["ts"][12:20])
+            rtemp[0].append(float(item["rt"]))
+            ltemp[0].append(float(item["lt"]))
+            x[0].append(float(item["x"]))
+            y[0].append(float(item["y"]))
+            z[0].append(float(item["z"]))
+            rx[0].append(float(item["rx"]))
+            ry[0].append(float(item["ry"]))
+            rz[0].append(float(item["rz"]))
+            if "Tm" in jDict:
+                total[0].append(float(item["Tm"]))
+            else:
+                istotal=False
+        
+#    sys.exit(0)
+else:      
+########### start plain read
+    with open(PrFilenames, 'r') as dataFile:
+        dataReader=csv.reader(dataFile)
+        data = list(dataReader)
+        Header = data.pop(0)
 
-for row in data:
-    decHours=time_string_to_decimals(row[0])
-    if decHours > 23:
-       LateHour=True # went past 23:00 hours    
-    if (not LateHour) or (LateHour and (decHours>23)): # Otherwise past 23:59:59.  Omit time past midnight.
-        hours[0].append(decHours) # already in float because of conversion to decimal hours.
-        rtemp[0].append(float(row[1]))
-        ltemp[0].append(float(row[2]))
-        x[0].append(float(row[3])) 
-        y[0].append(float(row[4]))
-        z[0].append(float(row[5]))
-        rx[0].append(float(row[6]))
-        ry[0].append(float(row[7]))
-        rz[0].append(float(row[8]))
-        if len(row) > 9 :
-            total[0].append(float(row[9]))
-        else: 
-            print(' no tot\n')
-            istotal = False
-            
-print('nf ',0,'len hours',len(hours[0]))
+    print('Ready to start processing plain records')
+
+    for row in data:
+        decHours=time_string_to_decimals(row[0])
+        if decHours > 23:
+           LateHour=True # went past 23:00 hours    
+        if (not LateHour) or (LateHour and (decHours>23)): # Otherwise past 23:59:59.  Omit time past midnight.
+            hours[0].append(decHours) # already in float because of conversion to decimal hours.
+            rtemp[0].append(float(row[1]))
+            ltemp[0].append(float(row[2]))
+            x[0].append(float(row[3])) 
+            y[0].append(float(row[4]))
+            z[0].append(float(row[5]))
+            rx[0].append(float(row[6]))
+            ry[0].append(float(row[7]))
+            rz[0].append(float(row[8]))
+            if len(row) > 9 :
+                total[0].append(float(row[9]))
+            else: 
+                print(' no tot\n')
+                istotal = False
+########################################### end plain read
+print('done reading \n')
+print('nf ',0,'len hours',len(hours[0]),'\n')
+print('len x',len(x[0]),'\n')
 
 ###############################################################################################
 # Find max and min 
