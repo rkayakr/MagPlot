@@ -1,28 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-plots PSWS magnetometer data in runmag.log
+plots PSWS magnetometer data from runmag.log
 
 windows version hardcoded homepath directory location
-for Pi comment out windows homepath and uncomment Pi  lines
-
-expects filemane to process in files.txt in PSWS/magnetometer
+expects filename to process in files.txt in PSWS/magnetometer
 expects magnetometer data files in PSWS/magnetometer/Mdata
-leaves plots in PSWS/magnetometer/Mplot
+leaves plots in homepath/Mplot
 
-uses modified WWV_utility2.py
+for Pi comment out windows homepath and uncomment Pi  lines
+leaves plots in homepath/Mplot
+
+uses modified WWV_utility2.py now called Mag_utility
 Bob Benedict, KD8CGH, 10/02/2021
 
 create text file "files.txt" in homepath directory
   filename 
-
   ...
 
 loads file name
 plots absolute, relative, total (if available) and temperature plots
 magnetometer results are filtered before plotting
+plot appearnce parameters at line 47
 
-uses modified WWV_utility2.py
+uses modified WWV_utility2.py 
 20 February 2020
 WWV utility file
 Routines and classes used in WWV file management and graphing
@@ -43,17 +44,22 @@ from scipy.signal import filtfilt, butter
 import datetime  
 from Mag_utility import time_string_to_decimals
 
-'''  #uncomment for Pi
-# ~ points to users home directory - usually /home/pi/
-homepath = os.path.expanduser('~')
+# plot appearance parameters
+M = 8  # number of plot y ticks
+lw=0.6  # plot line width
+pdpi=250 # final plot image dpi
+fsize='10' # font size
 
-# imbed the trailing / in the home path
-homepath = homepath + "/magnetometer/"
-
-#comment out windows homepath
+# Pi , comment out for windows
 '''
-
+homepath = '/home/pi'
+homepath = homepath + "/rm3100-runMag/"
+DATADIR = homepath + 'logs/'   # Pi
+'''
+#comment out windows homepath and data dir for Pi
 homepath = "E:\\Documents\\PSWS\\magnetometer\\"  # set your windows path, comment out for Pi
+DATADIR = homepath + 'magdata/'
+#
 
 names = open(homepath+"files.txt","r")
 
@@ -89,7 +95,8 @@ if nfiles > 1 :
     print('1 file limit this version')
     sys.exit(0)
 
-DATADIR = homepath + 'magdata/'
+
+
 
 #saved plot directrory
 PlotDir = homepath + 'Mplot/'
@@ -200,49 +207,48 @@ filtz[0] = filtfilt(b, a, z[0])
 
 filttot[0] = filtfilt(b, a, total[0])
 
-# start plots
-
-M = 7  # number of plot y ticks
-lw=0.6  # plot line width
-pdpi=250 # final plot image dpi
-
 '''
 ============================ relative data plot
 '''
 
 
 fig = plt.figure(figsize=(12,8))
-plt.rcParams['font.size'] = '7'
-gs = fig.add_gridspec(3, hspace=0)
-axs = gs.subplots(sharex=True)
+plt.rcParams['font.size'] = fsize
+gs = fig.add_gridspec(3, 1, hspace=0)
+ax0= fig.add_subplot(gs[0, 0])
+ax1= fig.add_subplot(gs[1, 0])
+ax2= fig.add_subplot(gs[2, 0])
+#axs = gs.subplots(sharex=True)
 fig.suptitle(Callsigns[0] + ' Rel Mag Data Plot '+Filedates[0])
 
-axs[2].set_xlabel('UTC Hour')
-axs[0].plot(hours[0], filtrx[0], colors[0], label='rx',linewidth=lw)
-axs[0].legend(loc="lower right",  frameon=False)
+ax2.set_xlabel('UTC Hour')
+ax0.plot(hours[0], filtrx[0], colors[0], label='rx',linewidth=lw)
+ax0.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[0].yaxis.set_major_locator(yticks)
-axs[0].grid(axis='both')
+ax0.yaxis.set_major_locator(yticks)
+ax0.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax0.grid(axis='both')
 
-axs[1].plot(hours[0], filtry[0], colors[1], label='ry',linewidth=lw)
-axs[1].legend(loc="lower right",  frameon=False)
+ax1.plot(hours[0], filtry[0], colors[1], label='ry',linewidth=lw)
+ax1.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[1].yaxis.set_major_locator(yticks)
-axs[1].grid(axis='both')
+ax1.yaxis.set_major_locator(yticks)
+ax1.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax1.grid(axis='both')
 
-axs[2].grid(axis='both')
-axs[2].plot(hours[0], filtrz[0], colors[2], label='rz',linewidth=lw)
-axs[2].legend(loc="lower right",  frameon=False)
+ax2.grid(axis='both')
+ax2.plot(hours[0], filtrz[0], colors[2], label='rz',linewidth=lw)
+ax2.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[2].yaxis.set_major_locator(yticks)
-axs[2].grid(axis='both')  # must set before and after !!!
+ax2.yaxis.set_major_locator(yticks)
+ax2.grid(axis='both')  # must set before and after !!!
 
-axs[2].set_xlabel('UTC Hour')
-axs[2].set_xlim(0,24) # UTC day
-axs[2].set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax2.set_xlabel('UTC Hour')
+ax2.set_xlim(0,24) # UTC day
+ax2.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
 
-for ax in axs:
-    ax.label_outer()
+
+ax1.label_outer()
 plt.grid(axis='both')
 GraphFile = Filedates[0]+'_' + Callsigns[0] + 'r.png'
 PlotGraphFile = PlotDir + GraphFile
@@ -253,34 +259,40 @@ print('Plot File: ' + GraphFile + '\n')
 '''
 
 fig = plt.figure(figsize=(12,8))
-gs = fig.add_gridspec(3, hspace=0)
-axs = gs.subplots(sharex=True)
+gs = fig.add_gridspec(3, 1, hspace=0)
+ax0= fig.add_subplot(gs[0, 0])
+ax1= fig.add_subplot(gs[1, 0])
+ax2= fig.add_subplot(gs[2, 0])
 fig.suptitle(Callsigns[0] + ' Abs Mag Data Plot '+Filedates[0])
-axs[0].plot(hours[0], filtx[0], colors[0], label='x',linewidth=lw)
-axs[0].legend(loc="lower right",  frameon=False)
+ax0.plot(hours[0], filtx[0], colors[0], label='x',linewidth=lw)
+ax0.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[0].yaxis.set_major_locator(yticks)
-axs[0].grid(axis='both')
+ax0.yaxis.set_major_locator(yticks)
+ax0.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax0.grid(axis='both')
 
-axs[1].plot(hours[0], filty[0], colors[1], label='y',linewidth=lw)
-axs[1].legend(loc="lower right",  frameon=False)
+ax1.plot(hours[0], filty[0], colors[1], label='y',linewidth=lw)
+ax1.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[1].yaxis.set_major_locator(yticks)
-axs[1].grid(axis='both')
+ax1.yaxis.set_major_locator(yticks)
+ax1.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax1.grid(axis='both')
 
-axs[2].grid(axis='both')
-axs[2].plot(hours[0], filtz[0], colors[2], label='z',linewidth=lw)
-axs[2].legend(loc="lower right",  frameon=False)
+ax2.grid(axis='both')
+ax2.plot(hours[0], filtz[0], colors[2], label='z',linewidth=lw)
+ax2.legend(loc="lower right",  frameon=False)
 yticks = ticker.MaxNLocator(M)
-axs[2].yaxis.set_major_locator(yticks)
-axs[2].grid(axis='both')  # must set before and after !!!
+ax2.yaxis.set_major_locator(yticks)
+ax2.grid(axis='both')  # must set before and after !!!
 
-axs[2].set_xlabel('UTC Hour')
-axs[2].set_xlim(0,24) # UTC day
-axs[2].set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+ax2.set_xlabel('UTC Hour')
+ax2.set_xlim(0,24) # UTC day
+ax2.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
 
-for ax in axs:
-    ax.label_outer()
+
+ax0.label_outer()
+ax1.label_outer()
+ax2.label_outer()
 plt.grid(axis='both')
 GraphFile = Filedates[0]+'_' + Callsigns[0] + 'a.png'
 PlotGraphFile = PlotDir + GraphFile
@@ -290,16 +302,22 @@ print('Plot File: ' + GraphFile + '\n')
 
 '''total data plot
 '''
+
 if istotal==True:
+    M = 10  # number of plot y ticks
     plt.rcParams['font.size'] = '10'
     fig = plt.figure(figsize=(12,8)) # inches x, y with 72 dots per inch
     ax = fig.add_subplot(111)
     ax.set_xlabel('UTC Hour')
     ax.set_xlim(0,24) # UTC day
     ax.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
+
     ax.plot(hours[0], filttot[0], colors[0],label='total') # color k for black
+    yticks = ticker.MaxNLocator(M)
+    ax.yaxis.set_major_locator(yticks)
     plt.grid(axis='both')
     plt.title(Callsigns[0] + ' Mag Total Data Plot '+Filedates[0])
+    
     ax.legend(loc="lower right",  frameon=False)
 
     GraphFile = Filedates[0]+'_' + Callsigns[0] + 't.png'
@@ -310,6 +328,7 @@ if istotal==True:
 
 '''temperature data plot
 '''
+M = 10  # number of plot y ticks
 plt.rcParams['font.size'] = '10'
 fig = plt.figure(figsize=(12,8)) # inches x, y with 72 dots per inch
 ax = fig.add_subplot(111)
@@ -317,7 +336,10 @@ ax.set_xlabel('UTC Hour')
 ax.set_xlim(0,24) # UTC day
 ax.set_xticks([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24], minor=False)
 ax.plot(hours[0], rtemp[0], colors[0],label='Remote T') # color k for black
-ax.plot(hours[0], ltemp[0], colors[1],label='Local T') 
+ax.plot(hours[0], ltemp[0], colors[1],label='Local T')
+yticks = ticker.MaxNLocator(M)
+ax.yaxis.set_major_locator(yticks)
+ax.set_ylabel('C')
 ax.legend(loc="lower right",  frameon=False)
 plt.grid(axis='both')
 plt.title(Callsigns[0] + ' Temperature Data Plot '+Filedates[0])
