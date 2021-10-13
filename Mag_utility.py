@@ -9,12 +9,12 @@ John Gibbons, N8OBJ - mods to plot header 2/3/20
 """
 
 #%% utility function needed here to convert ISO time into decimal hours
-def time_string_to_decimals(time_string): #returns float decimal hours
+def time_string_to_decimals(time_string, start): #returns float decimal hours
     
     #print('Input time string=',time_string)
 #    if (NewHdr = 'New'):   # if new header strip off date and Zulu stuff
 #        time_string = time_string[11:-1]  # Hack off date 'YYYY-MM-DDT' and ending 'Z'
-    time_string = time_string[12:]  # Hack off date 'YYYY-MM-DDT' and ending 'Z'
+    time_string = time_string[start:]  # start=12 to Hack off date 'YYYY-MM-DDT' and ending 'Z'
 #    print('Used Time_String=',time_string)
     fields=time_string.split(":")
     hours=float(fields[0]) if len(fields)>0 else 0.0
