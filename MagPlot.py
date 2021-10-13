@@ -223,7 +223,7 @@ if (isjson==True):  # read json format
             jList.append(jDict)
     print("Printing each JSON Decoded Object")
     for item in jList:
-        decHours=time_string_to_decimals(item["ts"],0)
+        decHours=time_string_to_decimals(item["ts"],11)  # was 0
         if decHours > 23:
            LateHour=True # went past 23:00 hours    
         if (not LateHour) or (LateHour and (decHours>23)):
