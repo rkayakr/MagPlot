@@ -3,6 +3,7 @@
 """
 plots PSWS magnetometer data from runmag.log
 plots either plain text or json format files
+ --> bug fixes
 
 windows version hardcoded homepath directory location
 expects filename with callsign to process 
@@ -269,12 +270,13 @@ else:
             if len(row) > 9 :
                 total[0].append(float(row[9]))
             else: 
-                print(' no tot\n')
                 istotal = False
+                
 ########################################### end plain read
 print('done reading \n')
 
 ###############################################################################################
+'''
 # Find max and min 
 min_T=min(np.amin(ltemp[0]),np.amin(rtemp[0]))
 max_T=max(np.amax(ltemp[0]),np.amax(rtemp[0]))
@@ -286,6 +288,7 @@ max_rel=max(np.amax(rx[0]),np.amax(ry[0]),np.amax(rz[0]))
 min_tot=np.amin(total[0])
 max_tot=np.amax(total[0])
 print('min rel ',min_rel,'max rel ',max_rel)
+'''
 
 #%% Create an order 3 lowpass butterworth filter.
 # This is a digital filter (analog=False)
@@ -306,7 +309,8 @@ filtx[0] = filtfilt(b, a, x[0])
 filty[0] = filtfilt(b, a, y[0])
 filtz[0] = filtfilt(b, a, z[0])
 
-filttot[0] = filtfilt(b, a, total[0])
+if istotal == True :
+    filttot[0] = filtfilt(b, a, total[0])
 
 '''
 ============================ relative data plot
@@ -443,7 +447,9 @@ if Rlt :
 #-------------------------------------------------------------------
 '''   single plot
 '''
-
+if not(Tot and istotal) :
+    Plot1 = False
+    
 if Plot1 :
 
     M = 10  # number of plot y ticks
@@ -484,3 +490,4 @@ if Plot1 :
     
 
 print('Exiting python magplot program gracefully')
+
