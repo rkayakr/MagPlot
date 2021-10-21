@@ -1,8 +1,8 @@
-# MagPlot
 plots PSWS magnetometer data from runmag.log
 plots either plain text or json format files
 v2.0
    X = the absolute value of reported Z and Z = X for absolute data for PSWS orientated RM3100
+   absolute Y axis meets convention of 10 nT ticks
    raw data axes unchanged
    filtering changed to gaussian with default sigma=16 -> 95 x 1s samples ~95 s
    intermag uses 19 x 5s samples ~ 95 s   "intermag_4-6_tech ref manual sec 2.2"
@@ -16,7 +16,7 @@ windows version hardcoded homepath directory location
 for Pi comment out windows homepath and uncomment Pi  lines
 
 uses modified WWV_utility2.py now called Mag_utility
-Bob Benedict, KD8CGH, 10/21/2021
+Bob Benedict, KD8CGH, 10/02/2021
 
 create text file "files.txt" in homepath directory, uses keyword and value, i.e. "type json"
   type (json or plain)
