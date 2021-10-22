@@ -1,1 +1,2 @@
-README.md screws up line wrap please see README.txt
+README.md screws up line wrap.
+Please see README.txt
