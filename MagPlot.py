@@ -3,6 +3,8 @@
 """
 plots PSWS magnetometer data from runmag.log
 plots either plain text or json format files
+v2.1
+    10nT option scales abs plot to 10nT with equal size divisions for all 3 axes
 v2.0
    X = the absolute value of reported Z and Z = X for absolute data for PSWS orientated RM3100
    raw data axes unchanged
@@ -24,10 +26,10 @@ create text file "files.txt" in homepath directory, uses keyword and value, i.e.
   type (json or plain)
   plot (all, abs, raw, tot, rlt, total, x, y, z, rx, ry, rz, rt (remote temperature))  
   time (all, start and finsh in hours:min:sec)
-  scale (matp, 10nT)  divisions on y scales - matp is matplotlib's best estimate, 10nT is fixed 10 nT 
-  filename 
+  scale (matp, 10nT)  divisions on abs scales - matp is matplotlib's best estimate, 10nT is fixed 10 nT 
+  filename of data file to plot
   
-  example:
+  files.txt example:
 type json
 plot abs
 time 09:33:00 12:59:00
@@ -36,8 +38,9 @@ KD8CGH-20211020-runmag.log
 
 loads file name
 plots absolute, relative, total (if available) and temperature plots, reports min/max remote T to shell
+
 magnetometer results are filtered before plotting
-plot appearnce parameters at line 66 including filter parameters
+plot appearnce parameters at line 69 including filter parameters
 using guassian filter, default sigma is from intermag_4-6_tech ref manual sec 2.2 
 
 uses modified WWV_utility2.py 
@@ -63,13 +66,12 @@ from Mag_utility import time_string_to_decimals
 import json
 
 # plot appearance parameters
-M = 6  # number of plot y axis ticks, except abs Y data y axis set to 10 nT by convention
-lw=0.6  # plot line width
-pdpi=250 # final plot image dpi
-fsize='10' # font size
-# lowpass butterworth filter parameters , deprecated for gaussian
-#FILTERBREAK=0.01 # filter breakpoint in Nyquist rates. N. rate here is 1/sec, 0.005 used in Grape 1 doppler so is in Hz. 
-#FILTERORDER=6   # 6
+M = 6  # number of plot y axis ticks when 10nT not set
+lw = 0.6  # plot line width
+pdpi = 250 # final plot image dpi
+fsize = '10' # font size
+pwidth = 12 # plot width
+pheight = 8 # plot size
 gf_simga=16 # guassian filter sigma
 # A gaussian kernel requires 6 σ − 1  values, e.g. for a σ of 3 it needs a kernel of length 17.
 # sigma=16 -> 95 x 1s samples ~95 s
@@ -311,37 +313,6 @@ max_rT=max(np.amax(rtemp[0]),np.amax(rtemp[0]))
 print('minimum remote temperature ',min_rT,' maximum remote temperature ',max_rT, '\n')
 
 ###############################################################################################
-'''
-# Find max and min 
-min_abs=min(np.amin(x[0]),np.amin(y[0]),np.amin(z[0]))
-max_abs=max(np.amax(x[0]),np.amax(y[0]),np.amax(z[0]))
-print('min T',min_T,'max T',max_T,'min abs ',min_abs,'max abs ',max_abs)
-min_rel=min(np.amin(rx[0]),np.amin(ry[0]),np.amin(rz[0]))
-max_rel=max(np.amax(rx[0]),np.amax(ry[0]),np.amax(rz[0]))
-min_tot=np.amin(total[0])
-max_tot=np.amax(total[0])
-print('min rel ',min_rel,'max rel ',max_rel)
-
-#%% Create an order 3 lowpass butterworth filter.
-# This is a digital filter (analog=False)
-# Filtering at .01 to .004 times the Nyquist rate seems "about right."
-# The filtering argument (Wn, the second argument to butter()) of.01
-# represents filtering at .05 Hz, or 20 second weighted averaging.
-# That corresponds with the 20 second symmetric averaging window used in the 1 October 2019
-# Excel spreadsheet for the Festival of Frequency Measurement data.
-#FILTERBREAK=.005 #filter breakpoint in Nyquist rates. N. rate here is 1/sec, so this is in Hz.
-
-b, a = butter(FILTERORDER, FILTERBREAK, analog=False, btype='low')
-
-filtrx[0] = filtfilt(b, a, rx[0])
-filtry[0] = filtfilt(b, a, ry[0])
-filtrz[0] = filtfilt(b, a, rz[0])
-
-filtx[0] = filtfilt(b, a, x[0])
-filty[0] = filtfilt(b, a, y[0])
-filtz[0] = filtfilt(b, a, z[0])
-
-'''
 # *********************************************** gaussian filtering
 filtrx[0] = gaussian_filter(rx[0], sigma=gf_simga, mode='nearest')
 filtry[0] = gaussian_filter(ry[0], sigma=gf_simga, mode='nearest')
@@ -360,7 +331,7 @@ else:
     tt=end-start
     xt=[start, start+.1*tt, start+.2*tt,start+.3*tt,start+.4*tt,start+.5*tt, start+.6*tt,start+.7*tt,start+.8*tt,start+.9*tt,end]
 
-''' raw data plot
+''' ======================== raw data plot
 '''
 if Raw:
     fig = plt.figure(figsize=(12,8))
@@ -415,51 +386,87 @@ if Raw:
     print('Plot File: ' + GraphFile + '\n')
 #    plt.show()
 
-'''absolute data plot
+'''================================ absolute data plot
 '''
 if Abs==True:
-    fig = plt.figure(figsize=(12,8))
+    if nT :  # if nT manually set ticks - PITA
+        dd=1
+        xyticks=[]
+        yyticks=[]
+        zyticks=[]
+        
+        minx = ((np.amin(filtx[0])-dd)//10.0)*10.0
+        maxx = ((np.amax(filtx[0])+dd)//10.0+1)*10.0
+        rangex=maxx-minx
+        temp=minx+10.0    # start one tick up
+        while temp < maxx+1.0 : # +1 for float  check
+            xyticks.append(temp)
+            temp=temp+10.0
+#        print(xyticks,len(xyticks),'\n')        
+        
+        miny = ((np.amin(filty[0])-dd)//10.0)*10.0
+        maxy = ((np.amax(filty[0])+dd)//10.0+1)*10.0
+        rangey=maxy-miny
+        temp=miny+10.0    # start one tick up
+        while temp < maxy+1.0 :
+            yyticks.append(temp)
+            temp=temp+10.0
+#        print(yyticks,len(yyticks),'\n')
+                
+        minz = ((np.amin(filtz[0])+dd)//10.0)*10.0
+        maxz = ((np.amax(filtz[0])+dd)//10.0+1)*10.0        
+        rangez=maxz-minz
+        temp=minz
+        while temp <= maxz :
+            zyticks.append(temp)
+            temp=temp+10.0
+#        print(zyticks,len(zyticks),'\n')        
+    else:
+        rangex=rangey=rangez=1  # not nT - library sets M ticks
+        Mxyticks = ticker.MaxNLocator(M)
+        Myyticks = ticker.MaxNLocator(M)
+        Mzyticks = ticker.MaxNLocator(M)
+        
+    hratio=[rangex, rangey, rangez]  # subplot height sizes for nT case
+#    print(hratio,'\n')    
+        
+    fig = plt.figure(figsize=(pwidth, pheight))
     plt.rcParams['font.size'] = fsize
     plt.xlim([start,end])
     plt.tick_params(labelleft=False, left=False)
     plt.tick_params(labelbottom=False, bottom=False)
-    gs = fig.add_gridspec(3, 1, hspace=0)
+    gs = fig.add_gridspec(3, 1, hspace=0, height_ratios=hratio) # 3 subplots, close and and sizes
     
     ax0= fig.add_subplot(gs[0, 0])
     ax1= fig.add_subplot(gs[1, 0])
     ax2= fig.add_subplot(gs[2, 0])
     
+    if nT :    # if nT set y limits and ticks, else let library set
+        ax0.set_ylim(minx,maxx)
+        ax1.set_ylim(miny,maxy)
+        ax2.set_ylim(minz,maxz)
+    
     fig.suptitle(Callsigns[0] + ' Abs Mag Data Plot, PSWS orientation'+Filedates[0])
     ax0.plot(hours[0], filtx[0], colors[0], label='x, N',linewidth=lw)
     ax0.legend(loc="lower right",  frameon=False)
- 
-    if nT :
-        miny = np.amin(filtx[0])//10.0
-        maxy = np.amax(filtx[0])//10.0 + 1
-        nyticks=(maxy-miny) + 1
-        yticks = ticker.MaxNLocator(nyticks)
+
+
+    if nT:
+        ax0.set_yticks(xyticks, minor=False)
     else:
-        yticks = ticker.MaxNLocator(M)
+        ax0.yaxis.set_major_locator(Mxyticks)
         
-    ax0.yaxis.set_major_locator(yticks)
-      
     ax0.set_xlim(start,end) 
     ax0.set_xticks(xt, minor=False)
     ax0.grid(axis='both')
 
     ax1.plot(hours[0], filty[0], colors[1], label='y, E',linewidth=lw)
     ax1.legend(loc="lower right",  frameon=False)
-    
-    #  find number of yticks so spaced 10 apart
-    if nT :
-        miny = np.amin(filty[0])//10.0
-        maxy = np.amax(filty[0])//10.0 + 1
-        nyticks=(maxy-miny) + 1
-        yticks = ticker.MaxNLocator(nyticks)
-    else:
-        yticks = ticker.MaxNLocator(M)
         
-    ax1.yaxis.set_major_locator(yticks)
+    if nT:
+        ax1.set_yticks(yyticks, minor=False)
+    else:
+        ax1.yaxis.set_major_locator(Myyticks)
     
     ax1.set_xlim(start,end) 
     ax1.set_xticks(xt, minor=False)
@@ -469,16 +476,10 @@ if Abs==True:
     ax2.plot(hours[0], filtz[0], colors[2], label='z',linewidth=lw)
     ax2.legend(loc="lower right",  frameon=False)
  
-    if nT :
-        miny = np.amin(filtz[0])//10.0
-        maxy = np.amax(filtz[0])//10.0 + 1        
-        nyticks=(maxy-miny)
-        ax2.set_ylim(miny*10, maxy*10)
-        yticks = ticker.MaxNLocator(nyticks)
+    if nT:
+        ax2.set_yticks(zyticks, minor=False)
     else:
-        yticks = ticker.MaxNLocator(M)
-
-    ax2.yaxis.set_major_locator(yticks)
+        ax2.yaxis.set_major_locator(Mzyticks)
     
     ax2.grid(axis='both')  # must set before and after !!!
 
@@ -496,7 +497,7 @@ if Abs==True:
     print('Plot File: ' + GraphFile + '\n')
 #    plt.show()
 
-'''temperature data plot
+''' ==================================  temperature data plot
 '''
 if Rlt :
     M = 10  # number of plot y ticks
@@ -523,7 +524,7 @@ if Rlt :
     print('Plot File: ' + GraphFile + '\n')
 
 #-------------------------------------------------------------------
-'''   single plot
+''' =================================  single plot
 '''
     
 if Plot1 :
