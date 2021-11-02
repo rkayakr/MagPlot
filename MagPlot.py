@@ -64,6 +64,7 @@ from scipy.ndimage import gaussian_filter
 import datetime  
 from Mag_utility import time_string_to_decimals
 import json
+import re
 
 # plot appearance parameters
 M = 6  # number of plot y axis ticks when 10nT not set
@@ -92,7 +93,7 @@ names = open(homepath+"files.txt","r")
 
 temp = names.readline() # what format will the data be in?
 temp=temp.strip("\n")
-FileType=temp.split(' ')
+FileType=re.split(' +',temp)
 if FileType[1] == 'json':
     isjson=True
     print('json file \n')
@@ -111,7 +112,7 @@ Plot1=nT=False # plot only 1 item
 
 temp = names.readline()  # what to plot
 temp=temp.strip("\n")
-ToPlot=temp.split(' ')
+ToPlot=re.split(' +',temp)
 if ToPlot[1] == "x":
     Xo=Plot1=True
     print('plot x only \n')
@@ -154,7 +155,7 @@ elif ToPlot[1] == "tot":
 
 temp=names.readline() # plot time range
 temp=temp.strip("\n")
-Times=temp.split(' ')
+Times=re.split(' +',temp)
 if len(Times[1]) > 4:
     start = time_string_to_decimals(Times[1],0)
     end = time_string_to_decimals(Times[2],0)
@@ -168,7 +169,7 @@ else:
 
 temp = names.readline()  # scales
 temp=temp.strip("\n")
-Scale=temp.split(' ')
+Scale=re.split(' +',temp)
 if Scale[1] == "10nT":
     nT=True
     print('scale y axis by 10nT \n')
@@ -187,7 +188,7 @@ colors=['b','g','r','c','m','y','tab:orange','tab:gray','tab:purple','tab:brown'
 
 while True:
     temp = names.readline()  # read with current runmag filename convention
-    if  len(temp) == 0:
+    if  len(temp) == 0 or temp =='\n':
         break
     print(temp+'\n')
     Filenames[nfiles]=temp.strip("\n")
